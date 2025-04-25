@@ -905,74 +905,174 @@ const renderElements = () => {
     
     // Add ID for animation targeting
     elementProps.id = element.id;
+
+    // Add permanently applied animations
+    const animElements = element.animations?.map(anim => {
+      const { id, ...commonProps } = {
+        id: anim.id,
+        dur: `${anim.dur}s`,
+        repeatCount: anim.repeatCount || "indefinite",
+        begin: anim.beginTime ? `${anim.beginTime}s` : "0s"
+      };
+
+      if (anim.type === 'rotate') {
+        return (
+          <animateTransform
+            key={id}
+            {...commonProps}
+            attributeName="transform"
+            type="rotate"
+            from={`${anim.from} ${element.cx || element.x + (element.width/2) || 0} ${element.cy || element.y + (element.height/2) || 0}`}
+            to={`${anim.to} ${element.cx || element.x + (element.width/2) || 0} ${element.cy || element.y + (element.height/2) || 0}`}
+            additive="sum"
+          />
+        );
+      } else if (anim.type === 'scale') {
+        return (
+          <animateTransform
+            key={id}
+            {...commonProps}
+            attributeName="transform"
+            type="scale"
+            from={anim.from}
+            to={anim.to}
+            additive="sum"
+          />
+        );
+      } else if (anim.type === 'colorShift') {
+        return (
+          <animate
+            key={id}
+            {...commonProps}
+            attributeName={anim.attributeName}
+            values={anim.values}
+          />
+        );
+      } else if (anim.type === 'motion' && anim.values) {
+        return (
+          <animate
+            key={id}
+            {...commonProps}
+            attributeName={anim.attributeName}
+            values={anim.values}
+            keyTimes={anim.keyTimes}
+          />
+        );
+      } else if (anim.type === 'attribute') {
+        return (
+          <animate
+            key={id}
+            {...commonProps}
+            attributeName={anim.attributeName}
+            from={anim.from}
+            to={anim.to}
+          />
+        );
+      }
+      return null;
+    });
     
     if (element.type === 'rect') {
+      // Calculate center point for transformations
+      const centerX = element.x + (element.width / 2);
+      const centerY = element.y + (element.height / 2);
+      
       return (
-        <rect
-          key={element.id}
-          x={element.x}
-          y={element.y}
-          width={element.width}
-          height={element.height}
-          fill={element.fill}
-          stroke={element.stroke}
-          strokeWidth={element.strokeWidth}
-          {...elementProps}
-        />
+        <g key={element.id} transform={`translate(${centerX},${centerY})`}>
+          <rect
+            key={`${element.id}-rect`}
+            x={-element.width/2}
+            y={-element.height/2}
+            width={element.width}
+            height={element.height}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            {...elementProps}
+          />
+          {animElements}
+        </g>
       );
     } else if (element.type === 'circle') {
       return (
-        <circle
-          key={element.id}
-          cx={element.cx}
-          cy={element.cy}
-          r={element.r}
-          fill={element.fill}
-          stroke={element.stroke}
-          strokeWidth={element.strokeWidth}
-          {...elementProps}
-        />
+        <g key={element.id} transform={`translate(${element.cx},${element.cy})`}>
+          <circle
+            key={`${element.id}-circle`}
+            cx={0}
+            cy={0}
+            r={element.r}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            {...elementProps}
+          />
+          {animElements}
+        </g>
       );
     } else if (element.type === 'ellipse') {
       return (
-        <ellipse
-          key={element.id}
-          cx={element.cx}
-          cy={element.cy}
-          rx={element.rx}
-          ry={element.ry}
-          fill={element.fill}
-          stroke={element.stroke}
-          strokeWidth={element.strokeWidth}
-          strokeDasharray={element.strokeDasharray}
-          {...elementProps}
-        />
+        <g key={element.id} transform={`translate(${element.cx},${element.cy})`}>
+          <ellipse
+            key={`${element.id}-ellipse`}
+            cx={0}
+            cy={0}
+            rx={element.rx}
+            ry={element.ry}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            strokeDasharray={element.strokeDasharray}
+            {...elementProps}
+          />
+          {animElements}
+        </g>
       );
     } else if (element.type === 'text') {
       return (
-        <text
-          key={element.id}
-          x={element.x}
-          y={element.y}
-          fontFamily={element.fontFamily}
-          fontSize={element.fontSize}
-          fill={element.fill}
-          {...elementProps}
-        >
-          {element.text}
-        </text>
+        <g key={element.id} transform={`translate(${element.x},${element.y})`}>
+          <text
+            key={`${element.id}-text`}
+            x={0}
+            y={0}
+            fontFamily={element.fontFamily}
+            fontSize={element.fontSize}
+            fill={element.fill}
+            {...elementProps}
+          >
+            {element.text}
+          </text>
+          {animElements}
+        </g>
       );
     } else if (element.type === 'path') {
+      // Get path bounding box for center point
+      const bbox = getBoundingBox(element);
+      const centerX = bbox.x + (bbox.width / 2);
+      const centerY = bbox.y + (bbox.height / 2);
+      
+      // Adjust path data relative to center
+      const adjustedPathData = element.d.split(/(?=[MLHVCSQTAZmlhvcsqtaz])/).map(cmd => {
+        const type = cmd.charAt(0);
+        if (type === 'M' || type === 'L') {
+          const [_, x, y] = cmd.match(/([MLml])\s*([^,\s]+)[,\s]([^,\s]+)/) || [null, type, 0, 0];
+          return `${type} ${parseFloat(x) - centerX} ${parseFloat(y) - centerY}`;
+        }
+        return cmd;
+      }).join(' ');
+      
       return (
-        <path
-          key={element.id}
-          d={element.d}
-          fill={element.fill}
-          stroke={element.stroke}
-          strokeWidth={element.strokeWidth}
-          strokeDasharray={element.strokeDasharray}
-          {...elementProps}
-        />
+        <g key={element.id} transform={`translate(${centerX},${centerY})`}>
+          <path
+            key={`${element.id}-path`}
+            d={adjustedPathData}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            strokeDasharray={element.strokeDasharray}
+            {...elementProps}
+          />
+          {animElements}
+        </g>
       );
     }
     return null;
@@ -1280,8 +1380,154 @@ return (
         {/* Grid */}
         {renderGrid()}
         
+        {/* Definitions */}
+        <defs>
+          {/* SVG Filter Definitions */}
+          {svgFilters.map(filter => (
+            <filter key={filter.id} id={filter.id}>
+              {filter.type === 'gaussianBlur' && (
+                <feGaussianBlur stdDeviation={filter.props.stdDeviation} />
+              )}
+              {filter.type === 'turbulence' && (
+                <feTurbulence
+                  type={filter.props.type}
+                  baseFrequency={filter.props.baseFrequency}
+                  numOctaves={filter.props.numOctaves}
+                  seed={filter.props.seed}
+                />
+              )}
+              {filter.type === 'displacement' && (
+                <>
+                  <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" result="turbulence" />
+                  <feDisplacementMap
+                    in2="turbulence"
+                    in="SourceGraphic"
+                    scale={filter.props.scale}
+                    xChannelSelector="R"
+                    yChannelSelector="G"
+                  />
+                </>
+              )}
+            </filter>
+          ))}
+
+          {/* SVG Gradient Definitions */}
+          {svgGradients.map(gradient => (
+            gradient.type === 'linear' ? (
+              <linearGradient
+                key={gradient.id}
+                id={gradient.id}
+                x1={gradient.props.x1}
+                y1={gradient.props.y1}
+                x2={gradient.props.x2}
+                y2={gradient.props.y2}
+              >
+                {gradient.stops.map((stop, i) => (
+                  <stop
+                    key={i}
+                    offset={`${stop.offset}%`}
+                    stopColor={stop.color}
+                    stopOpacity={stop.opacity}
+                  />
+                ))}
+              </linearGradient>
+            ) : (
+              <radialGradient
+                key={gradient.id}
+                id={gradient.id}
+                cx={gradient.props.cx}
+                cy={gradient.props.cy}
+                r={gradient.props.r}
+                fx={gradient.props.fx}
+                fy={gradient.props.fy}
+              >
+                {gradient.stops.map((stop, i) => (
+                  <stop
+                    key={i}
+                    offset={`${stop.offset}%`}
+                    stopColor={stop.color}
+                    stopOpacity={stop.opacity}
+                  />
+                ))}
+              </radialGradient>
+            )
+          ))}
+        </defs>
+
         {/* Elements */}
         {renderElements()}
+
+        {/* Animation Elements */}
+        {previewAnimation && animations.map(anim => {
+          if (anim.type === 'rotate') {
+            return (
+              <animateTransform
+                key={anim.id}
+                xlinkHref={`#${anim.elementId}`}
+                attributeName="transform"
+                type="rotate"
+                from={`${anim.from} ${anim.cx || 0} ${anim.cy || 0}`}
+                to={`${anim.to} ${anim.cx || 0} ${anim.cy || 0}`}
+                dur={`${anim.dur}s`}
+                repeatCount={anim.repeatCount}
+                begin={anim.beginTime ? `${anim.beginTime}s` : "0s"}
+              />
+            );
+          } else if (anim.type === 'scale') {
+            return (
+              <animateTransform
+                key={anim.id}
+                xlinkHref={`#${anim.elementId}`}
+                attributeName="transform"
+                type="scale"
+                from={anim.from}
+                to={anim.to}
+                dur={`${anim.dur}s`}
+                repeatCount={anim.repeatCount}
+                begin={anim.beginTime ? `${anim.beginTime}s` : "0s"}
+              />
+            );
+          } else if (anim.type === 'colorShift') {
+            return (
+              <animate
+                key={anim.id}
+                xlinkHref={`#${anim.elementId}`}
+                attributeName={anim.attributeName}
+                values={anim.values}
+                dur={`${anim.dur}s`}
+                repeatCount={anim.repeatCount}
+                begin={anim.beginTime ? `${anim.beginTime}s` : "0s"}
+              />
+            );
+          } else if (anim.type === 'motion' && anim.values) {
+            return (
+              <animate
+                key={anim.id}
+                xlinkHref={`#${anim.elementId}`}
+                attributeName={anim.attributeName}
+                values={anim.values}
+                keyTimes={anim.keyTimes}
+                dur={`${anim.dur}s`}
+                repeatCount={anim.repeatCount}
+                begin={anim.beginTime ? `${anim.beginTime}s` : "0s"}
+              />
+            );
+          } else if (anim.type === 'attribute') {
+            return (
+              <animate
+                key={anim.id}
+                xlinkHref={`#${anim.elementId}`}
+                attributeName={anim.attributeName}
+                from={anim.from}
+                to={anim.to}
+                dur={`${anim.dur}s`}
+                repeatCount={anim.repeatCount}
+                begin={anim.beginTime ? `${anim.beginTime}s` : "0s"}
+              />
+            );
+          }
+          return null;
+        })}
         
         {/* Drawing path preview */}
         {isDrawing && (
@@ -2466,6 +2712,35 @@ return (
                   onClick={() => setPreviewAnimation(!previewAnimation)}
                 >
                   {previewAnimation ? 'Stop Preview' : 'Preview Animations'}
+                </button>
+                <button
+                  className="px-3 py-1 rounded bg-green-500 text-white ml-2"
+                  onClick={() => {
+                    const anim = animations.find(a => a.id === selectedAnimationId);
+                    if (!anim) return;
+
+                    const element = elements.find(el => el.id === anim.elementId);
+                    if (!element) return;
+
+                    const newElements = [...elements];
+                    const index = newElements.findIndex(el => el.id === element.id);
+                    
+                    if (!newElements[index].animations) {
+                      newElements[index].animations = [];
+                    }
+                    // Create a new animation object with a unique ID
+                    const appliedAnim = {
+                      ...anim,
+                      id: `applied-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+                    };
+                    newElements[index].animations.push(appliedAnim);
+                    
+                    setElements(newElements);
+                    setSelectedElement(newElements[index]);
+                  }}
+                  disabled={!selectedAnimationId}
+                >
+                  Apply Animation
                 </button>
               </div>
             </div>
