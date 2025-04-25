@@ -1,3 +1,49 @@
+import { useState, useRef, useEffect } from 'react';
+
+// Main component that handles the SVG drag and drop editor
+const SVGDragDropEditor = () => {
+// State for managing elements in the editor
+const [elements, setElements] = useState([]);
+const [selectedElement, setSelectedElement] = useState(null);
+const [draggedElement, setDraggedElement] = useState(null);
+const [offset, setOffset] = useState({ x: 0, y: 0 });
+const [isDrawing, setIsDrawing] = useState(false);
+const [drawingPath, setDrawingPath] = useState('');
+const [pathPoints, setPathPoints] = useState([]);
+const [mode, setMode] = useState('select'); // select, rect, circle, text, path, filter, gradient, animation
+const [gridSize, setGridSize] = useState(20);
+const [showGrid, setShowGrid] = useState(true);
+const [snapToGrid, setSnapToGrid] = useState(true);
+const [history, setHistory] = useState([]);
+const [historyIndex, setHistoryIndex] = useState(-1);
+const [zoomLevel, setZoomLevel] = useState(1);
+const [viewBox, setViewBox] = useState({ x: 0, y: 0, width: 800, height: 600 });
+const [textInput, setTextInput] = useState("");
+const [showTextInput, setShowTextInput] = useState(false);
+const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
+const [isResizing, setIsResizing] = useState(false);
+const [resizeDirection, setResizeDirection] = useState('');
+const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
+const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
+const [clipboard, setClipboard] = useState(null);
+
+// Advanced SVG feature states
+const [svgFilters, setSvgFilters] = useState([]);
+const [svgGradients, setSvgGradients] = useState([]);
+const [animations, setAnimations] = useState([]);
+const [selectedFilterId, setSelectedFilterId] = useState(null);
+const [selectedGradientId, setSelectedGradientId] = useState(null);
+const [selectedAnimationId, setSelectedAnimationId] = useState(null);
+const [previewAnimation, setPreviewAnimation] = useState(false);
+const [timePosition, setTimePosition] = useState(0);
+const [showFilterPanel, setShowFilterPanel] = useState(false);
+const [showGradientPanel, setShowGradientPanel] = useState(false);
+const [showAnimationPanel, setShowAnimationPanel] = useState(false);
+
+// References
+const svgRef = useRef(null);
+const textInputRef = useRef(null);
+
 // Generate unique IDs for elements
 const generateId = () => `element-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   
@@ -42,8 +88,8 @@ const createRectangle = (x, y, width = 100, height = 80) => {
     y: snapToGridValue(y),
     width,
     height,
-    fill: 'lightblue',
-    stroke: 'blue',
+    fill: '#ADD8E6',
+    stroke: '#0000FF',
     strokeWidth: 2,
   };
 };
@@ -278,214 +324,6 @@ const handleMouseDown = (e) => {
     setElements([...elements, ...quantumElements]);
     setSelectedElement(quantumElements[0]);
     setMode('select'); // Switch back to select mode
-  }
-};import { useState, useRef, useEffect } from 'react';
-
-// Main component that handles the SVG drag and drop editor
-const SVGDragDropEditor = () => {
-// State for managing elements in the editor
-const [elements, setElements] = useState([]);
-const [selectedElement, setSelectedElement] = useState(null);
-const [draggedElement, setDraggedElement] = useState(null);
-const [offset, setOffset] = useState({ x: 0, y: 0 });
-const [isDrawing, setIsDrawing] = useState(false);
-const [drawingPath, setDrawingPath] = useState('');
-const [pathPoints, setPathPoints] = useState([]);
-const [mode, setMode] = useState('select'); // select, rect, circle, text, path, filter, gradient, animation
-const [gridSize, setGridSize] = useState(20);
-const [showGrid, setShowGrid] = useState(true);
-const [snapToGrid, setSnapToGrid] = useState(true);
-const [history, setHistory] = useState([]);
-const [historyIndex, setHistoryIndex] = useState(-1);
-const [zoomLevel, setZoomLevel] = useState(1);
-const [viewBox, setViewBox] = useState({ x: 0, y: 0, width: 800, height: 600 });
-const [textInput, setTextInput] = useState("");
-const [showTextInput, setShowTextInput] = useState(false);
-const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
-const [isResizing, setIsResizing] = useState(false);
-const [resizeDirection, setResizeDirection] = useState('');
-const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
-const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
-const [clipboard, setClipboard] = useState(null);
-
-// Advanced SVG feature states
-const [svgFilters, setSvgFilters] = useState([]);
-const [svgGradients, setSvgGradients] = useState([]);
-const [animations, setAnimations] = useState([]);
-const [selectedFilterId, setSelectedFilterId] = useState(null);
-const [selectedGradientId, setSelectedGradientId] = useState(null);
-const [selectedAnimationId, setSelectedAnimationId] = useState(null);
-const [previewAnimation, setPreviewAnimation] = useState(false);
-const [timePosition, setTimePosition] = useState(0);
-const [showFilterPanel, setShowFilterPanel] = useState(false);
-const [showGradientPanel, setShowGradientPanel] = useState(false);
-const [showAnimationPanel, setShowAnimationPanel] = useState(false);
-
-// References
-const svgRef = useRef(null);
-const textInputRef = useRef(null);
-
-// Generate unique IDs for elements
-const generateId = () => `element-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-// Add to history when elements change
-useEffect(() => {
-  if (elements.length > 0 && (history.length === 0 || JSON.stringify(history[historyIndex]) !== JSON.stringify(elements))) {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push([...elements]);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }
-}, [elements]);
-
-// Focus text input when it appears
-useEffect(() => {
-  if (showTextInput && textInputRef.current) {
-    textInputRef.current.focus();
-  }
-}, [showTextInput]);
-
-// Snap value to grid
-const snapToGridValue = (value) => {
-  return snapToGrid ? Math.round(value / gridSize) * gridSize : value;
-};
-
-// Element creation functions
-const createRectangle = (x, y, width = 100, height = 80) => {
-  return {
-    id: generateId(),
-    type: 'rect',
-    x: snapToGridValue(x),
-    y: snapToGridValue(y),
-    width,
-    height,
-    fill: 'lightblue',
-    stroke: 'blue',
-    strokeWidth: 2,
-  };
-};
-
-const createCircle = (x, y, radius = 50) => {
-  return {
-    id: generateId(),
-    type: 'circle',
-    cx: snapToGridValue(x),
-    cy: snapToGridValue(y),
-    r: radius,
-    fill: 'lightgreen',
-    stroke: 'green',
-    strokeWidth: 2,
-  };
-};
-
-const createText = (x, y, text = 'Text') => {
-  return {
-    id: generateId(),
-    type: 'text',
-    x: snapToGridValue(x),
-    y: snapToGridValue(y),
-    text,
-    fontSize: 20,
-    fontFamily: 'Arial',
-    fill: 'black',
-  };
-};
-
-const createPath = (points) => {
-  // Create SVG path from points
-  const pathData = points.reduce((acc, point, i) => {
-    if (i === 0) return `M ${point.x} ${point.y}`;
-    return `${acc} L ${point.x} ${point.y}`;
-  }, '');
-  
-  return {
-    id: generateId(),
-    type: 'path',
-    d: pathData,
-    fill: 'none',
-    stroke: 'red',
-    strokeWidth: 2,
-  };
-};
-
-// Handle mouse down on the SVG canvas
-const handleMouseDown = (e) => {
-  const svgPoint = getSVGCoordinates(e);
-  
-  if (mode === 'select') {
-    // Check if we're clicking on a resize handle
-    if (selectedElement && e.target.classList.contains('resize-handle')) {
-      setIsResizing(true);
-      const direction = e.target.dataset.direction;
-      setResizeDirection(direction);
-      setInitialSize({ 
-        width: selectedElement.width || selectedElement.r * 2, 
-        height: selectedElement.height || selectedElement.r * 2 
-      });
-      setInitialPosition({ 
-        x: selectedElement.x || selectedElement.cx - selectedElement.r, 
-        y: selectedElement.y || selectedElement.cy - selectedElement.r 
-      });
-      return;
-    }
-    
-    // Check if we're clicking on an existing element
-    const clickedElement = elements.find(el => isPointInElement(svgPoint, el));
-    
-    if (clickedElement) {
-      setSelectedElement(clickedElement);
-      setDraggedElement(clickedElement);
-      
-      // Calculate offset for dragging
-      if (clickedElement.type === 'rect' || clickedElement.type === 'text') {
-        setOffset({
-          x: svgPoint.x - clickedElement.x,
-          y: svgPoint.y - clickedElement.y
-        });
-      } else if (clickedElement.type === 'circle') {
-        setOffset({
-          x: svgPoint.x - clickedElement.cx,
-          y: svgPoint.y - clickedElement.cy
-        });
-      } else if (clickedElement.type === 'path') {
-        // For path, we need the bounding box
-        const bbox = getBoundingBox(clickedElement);
-        setOffset({
-          x: svgPoint.x - bbox.x,
-          y: svgPoint.y - bbox.y
-        });
-      }
-    } else {
-      // Clicked on empty space, deselect
-      setSelectedElement(null);
-    }
-  } else if (mode === 'rect') {
-    // Start creating a rectangle
-    const newRect = createRectangle(svgPoint.x, svgPoint.y, 0, 0);
-    setElements([...elements, newRect]);
-    setSelectedElement(newRect);
-    setDraggedElement(newRect);
-    setIsResizing(true);
-    setResizeDirection('se');
-    setInitialPosition({ x: svgPoint.x, y: svgPoint.y });
-  } else if (mode === 'circle') {
-    // Start creating a circle
-    const newCircle = createCircle(svgPoint.x, svgPoint.y, 0);
-    setElements([...elements, newCircle]);
-    setSelectedElement(newCircle);
-    setDraggedElement(newCircle);
-    setIsResizing(true);
-    setResizeDirection('se');
-    setInitialPosition({ x: svgPoint.x, y: svgPoint.y });
-  } else if (mode === 'text') {
-    // Position text input at click position
-    setTextPosition({ x: svgPoint.x, y: svgPoint.y });
-    setShowTextInput(true);
-  } else if (mode === 'path') {
-    // Start drawing a path
-    setIsDrawing(true);
-    setPathPoints([svgPoint]);
-    setDrawingPath(`M ${svgPoint.x} ${svgPoint.y}`);
   }
 };
 
@@ -770,6 +608,128 @@ const getBoundingBox = (pathElement) => {
     width: maxX - minX,
     height: maxY - minY
   };
+};
+
+// Helper functions for path animation
+const generatePathVariations = (pathData, numVariations, intensity = 0.5) => {
+  // Parse path data into segments
+  const pathSegments = parsePath(pathData);
+  const variations = [];
+  
+  for (let i = 0; i < numVariations; i++) {
+    const newSegments = pathSegments.map(segment => {
+      // Only modify coordinate values
+      if (segment.command === 'M' || segment.command === 'L') {
+        return {
+          ...segment,
+          x: segment.x + (Math.random() - 0.5) * 20 * intensity,
+          y: segment.y + (Math.random() - 0.5) * 20 * intensity
+        };
+      }
+      return segment;
+    });
+    
+    variations.push(stringifyPath(newSegments));
+  }
+  
+  // Make sure to return to original shape (for smooth cycles)
+  variations.push(pathData);
+  return variations.join(';');
+};
+
+const generateJitterPaths = (pathData, intensity, numVariations) => {
+  const pathSegments = parsePath(pathData);
+  const variations = [];
+  
+  for (let i = 0; i < numVariations; i++) {
+    const newSegments = pathSegments.map(segment => {
+      if (segment.command === 'M' || segment.command === 'L') {
+        // Create random jitter
+        const jitterX = (Math.random() - 0.5) * intensity;
+        const jitterY = (Math.random() - 0.5) * intensity;
+        
+        return {
+          ...segment,
+          x: segment.x + jitterX,
+          y: segment.y + jitterY
+        };
+      }
+      return segment;
+    });
+    
+    variations.push(stringifyPath(newSegments));
+  }
+  
+  // Add original path to ensure the animation loops smoothly
+  variations.push(pathData);
+  return variations.join(';');
+};
+
+const generateWavePaths = (pathData, intensity, numVariations) => {
+  const pathSegments = parsePath(pathData);
+  const variations = [];
+  
+  for (let i = 0; i < numVariations; i++) {
+    const phase = (i / numVariations) * Math.PI * 2;
+    
+    const newSegments = pathSegments.map((segment, index) => {
+      if (segment.command === 'M' || segment.command === 'L') {
+        // Create sine wave effect
+        const waveOffset = Math.sin(phase + index * 0.5) * intensity;
+        
+        return {
+          ...segment,
+          x: segment.x + waveOffset,
+          y: segment.y + waveOffset * 0.5 // Less vertical movement
+        };
+      }
+      return segment;
+    });
+    
+    variations.push(stringifyPath(newSegments));
+  }
+  
+  // Add original path to ensure the animation loops smoothly
+  variations.push(pathData);
+  return variations.join(';');
+};
+
+// Parse SVG path data into segments
+const parsePath = (pathData) => {
+  const segments = [];
+  const commands = pathData.split(/(?=[MLHVCSQTAZmlhvcsqtaz])/);
+  
+  commands.forEach(cmd => {
+    const type = cmd.charAt(0);
+    
+    if (type === 'M' || type === 'L') {
+      const [_, x, y] = cmd.match(/([MLml])\s*([^,\s]+)[,\s]([^,\s]+)/) || [null, type, 0, 0];
+      segments.push({
+        command: type,
+        x: parseFloat(x),
+        y: parseFloat(y)
+      });
+    } else {
+      // For other commands, just store the raw data
+      segments.push({
+        command: type,
+        raw: cmd
+      });
+    }
+  });
+  
+  return segments;
+};
+
+// Convert parsed segments back to path data string
+const stringifyPath = (segments) => {
+  return segments.map(segment => {
+    if (segment.command === 'M' || segment.command === 'L') {
+      return `${segment.command} ${segment.x} ${segment.y}`;
+    } else {
+      return segment.raw;
+    }
+  }).join(' ');
 };
 
 // Zoom handling
@@ -1117,7 +1077,7 @@ return (
         </button>
       </div>
       
-      <div className="flex items-center space-x-2 mr-4">
+      <div className="flex items-center text-gray-900 space-x-2 mr-4">
         <label className="flex items-center">
           <input
             type="checkbox"
@@ -1139,14 +1099,14 @@ return (
         <div className="flex items-center space-x-1">
           <span>Zoom:</span>
           <button
-            className="px-2 py-1 rounded bg-gray-200"
+            className="px-2 py-1 text-white rounded bg-gray-200"
             onClick={() => handleZoom(0.9)}
           >
             -
           </button>
           <span>{Math.round(zoomLevel * 100)}%</span>
           <button
-            className="px-2 py-1 rounded bg-gray-200"
+            className="px-2 py-1 text-white rounded bg-gray-200"
             onClick={() => handleZoom(1.1)}
           >
             +
@@ -1164,7 +1124,7 @@ return (
     
     {/* Properties panel for selected element */}
     {selectedElement && (
-      <div className="p-2 bg-gray-100 border-b">
+      <div className="p-2 bg-gray-100 text-gray-900 border-b">
         <div className="flex flex-wrap gap-2">
           {/* Common properties */}
           <div className="flex items-center">
@@ -1622,7 +1582,7 @@ return (
     
     {/* Gradient Panel */}
     {showGradientPanel && (
-      <div className="absolute top-20 right-4 w-96 bg-white border shadow-lg rounded-lg p-4 z-10">
+      <div className="absolute top-20 right-4 w-96 bg-white text-gray-900 border shadow-lg rounded-lg p-4 z-10">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-bold">SVG Gradients</h3>
           <button 
@@ -1869,6 +1829,665 @@ return (
                         <label className="w-16">Focus X:</label>
                         <input 
                           type="range" 
-                          min="0
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={gradient.props.fx}
+                          onChange={e => {
+                            const newGradients = [...svgGradients];
+                            const index = newGradients.findIndex(g => g.id === selectedGradientId);
+                            newGradients[index] = {
+                              ...newGradients[index],
+                              props: { ...newGradients[index].props, fx: Number(e.target.value) }
+                            };
+                            setSvgGradients(newGradients);
+                          }}
+                          className="flex-grow"
+                        />
+                        <span className="ml-2 w-12">{gradient.props.fx?.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <label className="w-16">Focus Y:</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={gradient.props.fy}
+                          onChange={e => {
+                            const newGradients = [...svgGradients];
+                            const index = newGradients.findIndex(g => g.id === selectedGradientId);
+                            newGradients[index] = {
+                              ...newGradients[index],
+                              props: { ...newGradients[index].props, fy: Number(e.target.value) }
+                            };
+                            setSvgGradients(newGradients);
+                          }}
+                          className="flex-grow"
+                        />
+                        <span className="ml-2 w-12">{gradient.props.fy?.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      )}
+
+<>
+      {showAnimationPanel && (
+        <div className="absolute top-20 right-4 w-96 bg-white border shadow-lg rounded-lg p-4 z-10 max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-gray-900">SVG Animations</h3>
+            <button 
+              className="text-gray-300 hover:text-gray-700" 
+              onClick={() => setShowAnimationPanel(false)}
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="mb-4">
+            <button 
+              className="px-3 py-1 rounded bg-blue-500 text-white"
+              onClick={() => {
+                if (!selectedElement) return;
+                
+                const newAnimation = {
+                  id: `anim-${Date.now()}`,
+                  elementId: selectedElement.id,
+                  type: 'rotate',
+                  attributeName: 'transform',
+                  from: 0,
+                  to: 360,
+                  dur: 3, // seconds
+                  repeatCount: 'indefinite',
+                  name: `Rotation ${animations.length + 1}`
+                };
+                setAnimations([...animations, newAnimation]);
+                setSelectedAnimationId(newAnimation.id);
+              }}
+              disabled={!selectedElement}
+            >
+              Add Rotation
+            </button>
+            <button 
+              className="px-3 py-1 rounded bg-blue-500 text-white ml-2"
+              onClick={() => {
+                if (!selectedElement) return;
+                
+                const newAnimation = {
+                  id: `anim-${Date.now()}`,
+                  elementId: selectedElement.id,
+                  type: 'scale',
+                  attributeName: 'transform',
+                  from: 1,
+                  to: 1.5,
+                  dur: 2, // seconds
+                  repeatCount: 'indefinite',
+                  name: `Scale ${animations.length + 1}`
+                };
+                setAnimations([...animations, newAnimation]);
+                setSelectedAnimationId(newAnimation.id);
+              }}
+              disabled={!selectedElement}
+            >
+              Add Scale
+            </button>
+            <button 
+              className="px-3 py-1 rounded bg-blue-500 text-white ml-2 mt-2"
+              onClick={() => {
+                if (!selectedElement) return;
+                
+                // Determine which attribute to animate based on element type
+                let attributeName;
+                let fromValue = 0;
+                let toValue = 1;
+                
+                switch (selectedElement.type) {
+                  case 'rect':
+                    attributeName = 'width';
+                    fromValue = selectedElement.width * 0.5;
+                    toValue = selectedElement.width * 1.5;
+                    break;
+                  case 'circle':
+                    attributeName = 'r';
+                    fromValue = selectedElement.r * 0.5;
+                    toValue = selectedElement.r * 1.5;
+                    break;
+                  case 'ellipse':
+                    attributeName = 'rx';
+                    fromValue = selectedElement.rx * 0.5;
+                    toValue = selectedElement.rx * 1.5;
+                    break;
+                  case 'path':
+                    attributeName = 'stroke-dashoffset';
+                    // Set the element's stroke-dasharray if not set
+                    if (!selectedElement.strokeDasharray) {
+                      const newElements = [...elements];
+                      const index = newElements.findIndex(el => el.id === selectedElement.id);
+                      if (index !== -1) {
+                        newElements[index] = { 
+                          ...newElements[index], 
+                          strokeDasharray: '20,10'
+                        };
+                        setElements(newElements);
+                        setSelectedElement(newElements[index]);
+                      }
+                    }
+                    fromValue = 0;
+                    toValue = 30;
+                    break;
+                  default:
+                    attributeName = 'opacity';
+                    fromValue = 0.2;
+                    toValue = 1;
+                }
+                
+                const newAnimation = {
+                  id: `anim-${Date.now()}`,
+                  elementId: selectedElement.id,
+                  type: 'attribute',
+                  attributeName,
+                  from: fromValue,
+                  to: toValue,
+                  dur: 1.5, // seconds
+                  repeatCount: 'indefinite',
+                  name: `${attributeName.charAt(0).toUpperCase() + attributeName.slice(1)} Anim ${animations.length + 1}`
+                };
+                setAnimations([...animations, newAnimation]);
+                setSelectedAnimationId(newAnimation.id);
+              }}
+              disabled={!selectedElement}
+            >
+              Add Attribute Animation
+            </button>
+            <button 
+              className="px-3 py-1 rounded bg-blue-500 text-white ml-2 mt-2"
+              onClick={() => {
+                if (!selectedElement) return;
+                
+                const newAnimation = {
+                  id: `anim-${Date.now()}`,
+                  elementId: selectedElement.id,
+                  type: 'colorShift',
+                  attributeName: 'fill',
+                  values: '#ff0000;#00ff00;#0000ff;#ff0000',
+                  dur: 4, // seconds
+                  repeatCount: 'indefinite',
+                  name: `Color Shift ${animations.length + 1}`
+                };
+                setAnimations([...animations, newAnimation]);
+                setSelectedAnimationId(newAnimation.id);
+              }}
+              disabled={!selectedElement}
+            >
+              Add Color Shift
+            </button>
+            <button 
+              className="px-3 py-1 rounded bg-blue-500 text-white ml-2 mt-2"
+              onClick={() => {
+                if (!selectedElement) return;
+                
+                const newAnimation = {
+                  id: `anim-${Date.now()}`,
+                  elementId: selectedElement.id,
+                  type: 'motion',
+                  attributeName: 'd',
+                  path: selectedElement.type === 'path' ? selectedElement.d : null,
+                  keyTimes: '0;0.25;0.5;0.75;1',
+                  values: selectedElement.type === 'path' 
+                    ? generatePathVariations(selectedElement.d, 5)
+                    : null,
+                  dur: 5, // seconds
+                  repeatCount: 'indefinite',
+                  name: `Path Morph ${animations.length + 1}`
+                };
+                setAnimations([...animations, newAnimation]);
+                setSelectedAnimationId(newAnimation.id);
+              }}
+              disabled={!(selectedElement && selectedElement.type === 'path')}
+            >
+              Path Morph
+            </button>
+          </div>
+          
+          <div className="mb-4 text-gray-900">
+            <h4 className="font-semibold mb-2">Your Animations:</h4>
+            {animations.length === 0 ? (
+              <p className="text-gray-500">No animations created yet</p>
+            ) : (
+              <div className="max-h-40 overflow-y-auto">
+                {animations.map(anim => {
+                  // Find the element this animation applies to
+                  const element = elements.find(el => el.id === anim.elementId);
+                  
+                  return (
+                    <div 
+                      key={anim.id}
+                      className={`p-2 mb-1 cursor-pointer rounded ${selectedAnimationId === anim.id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+                      onClick={() => setSelectedAnimationId(anim.id)}
+                    >
+                      {anim.name}{' '}
+                      {element ? `(${element.type})` : '(Element deleted)'}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          
+          {selectedAnimationId && (
+            <div className="text-gray-900">
+              <h4 className="font-semibold mb-2">Edit Animation Properties:</h4>
+              {(() => {
+                const anim = animations.find(a => a.id === selectedAnimationId);
+                if (!anim) return null;
+                
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <label className="w-32">Duration (s):</label>
+                      <input 
+                        type="range" 
+                        min="0.1" 
+                        max="10" 
+                        step="0.1"
+                        value={anim.dur} 
+                        onChange={e => {
+                          const newAnimations = [...animations];
+                          const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                          newAnimations[index] = {
+                            ...newAnimations[index],
+                            dur: Number(e.target.value)
+                          };
+                          setAnimations(newAnimations);
+                        }}
+                        className="flex-grow"
+                      />
+                      <span className="ml-2 w-12">{anim.dur}s</span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <label className="w-32">Repeat:</label>
+                      <select
+                        value={anim.repeatCount}
+                        onChange={e => {
+                          const newAnimations = [...animations];
+                          const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                          newAnimations[index] = {
+                            ...newAnimations[index],
+                            repeatCount: e.target.value
+                          };
+                          setAnimations(newAnimations);
+                        }}
+                        className="flex-grow p-1 border rounded"
+                      >
+                        <option value="1">Once</option>
+                        <option value="2">Twice</option>
+                        <option value="5">5 times</option>
+                        <option value="indefinite">Indefinite</option>
+                      </select>
+                    </div>
+                    
+                    {/* Animation delay */}
+                    <div className="flex items-center">
+                      <label className="w-32">Delay (s):</label>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="5" 
+                        step="0.1"
+                        value={anim.beginTime || 0} 
+                        onChange={e => {
+                          const newAnimations = [...animations];
+                          const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                          newAnimations[index] = {
+                            ...newAnimations[index],
+                            beginTime: Number(e.target.value)
+                          };
+                          setAnimations(newAnimations);
+                        }}
+                        className="flex-grow"
+                      />
+                      <span className="ml-2 w-12">{anim.beginTime || 0}s</span>
+                    </div>
+                    
+                    {/* Animation-specific properties */}
+                    {anim.type === 'rotate' && (
+                      <>
+                        <div className="flex items-center">
+                          <label className="w-32">From Angle:</label>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="360" 
+                            value={anim.from} 
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                from: Number(e.target.value)
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow"
+                          />
+                          <span className="ml-2 w-12">{anim.from}°</span>
+                        </div>
+                        <div className="flex items-center">
+                          <label className="w-32">To Angle:</label>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="360" 
+                            value={anim.to} 
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                to: Number(e.target.value)
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow"
+                          />
+                          <span className="ml-2 w-12">{anim.to}°</span>
+                        </div>
+                      </>
+                    )}
+                    
+                    {anim.type === 'scale' && (
+                      <>
+                        <div className="flex items-center">
+                          <label className="w-32">From Scale:</label>
+                          <input 
+                            type="range" 
+                            min="0.1" 
+                            max="3" 
+                            step="0.1"
+                            value={anim.from} 
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                from: Number(e.target.value)
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow"
+                          />
+                          <span className="ml-2 w-12">{anim.from}x</span>
+                        </div>
+                        <div className="flex items-center">
+                          <label className="w-32">To Scale:</label>
+                          <input 
+                            type="range" 
+                            min="0.1" 
+                            max="3" 
+                            step="0.1"
+                            value={anim.to} 
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                to: Number(e.target.value)
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow"
+                          />
+                          <span className="ml-2 w-12">{anim.to}x</span>
+                        </div>
+                      </>
+                    )}
+                    
+                    {anim.type === 'attribute' && (
+                      <>
+                        <div className="flex items-center">
+                          <label className="w-32">Attribute:</label>
+                          <select
+                            value={anim.attributeName}
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                attributeName: e.target.value
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow p-1 border rounded"
+                          >
+                            <option value="opacity">Opacity</option>
+                            <option value="width">Width</option>
+                            <option value="height">Height</option>
+                            <option value="r">Radius</option>
+                            <option value="rx">RadiusX</option>
+                            <option value="ry">RadiusY</option>
+                            <option value="stroke-width">Stroke Width</option>
+                            <option value="stroke-dashoffset">Dash Offset</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center">
+                          <label className="w-32">From Value:</label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max={anim.attributeName === 'opacity' ? 1 : 100}
+                            step={anim.attributeName === 'opacity' ? 0.1 : 1}
+                            value={anim.from} 
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                from: Number(e.target.value)
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow p-1 border rounded"
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <label className="w-32">To Value:</label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max={anim.attributeName === 'opacity' ? 1 : 100}
+                            step={anim.attributeName === 'opacity' ? 0.1 : 1}
+                            value={anim.to} 
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                to: Number(e.target.value)
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow p-1 border rounded"
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    {anim.type === 'colorShift' && (
+                      <>
+                        <div className="flex items-center">
+                          <label className="w-32">Color Values:</label>
+                          <div className="flex flex-grow flex-wrap gap-2">
+                            {anim.values.split(';').map((color, i) => (
+                              <div key={i} className="flex items-center">
+                                <input 
+                                  type="color" 
+                                  value={color}
+                                  onChange={e => {
+                                    const newAnimations = [...animations];
+                                    const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                                    const colors = newAnimations[index].values.split(';');
+                                    colors[i] = e.target.value;
+                                    newAnimations[index] = {
+                                      ...newAnimations[index],
+                                      values: colors.join(';')
+                                    };
+                                    setAnimations(newAnimations);
+                                  }}
+                                  className="w-8 h-8 p-0 border"
+                                />
+                              </div>
+                            ))}
+                            <button 
+                              className="px-2 py-1 bg-blue-500 text-white text-xs rounded"
+                              onClick={() => {
+                                const newAnimations = [...animations];
+                                const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                                const colors = newAnimations[index].values.split(';');
+                                // Add new random color
+                                const randomColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+                                colors.splice(colors.length-1, 0, randomColor);
+                                newAnimations[index] = {
+                                  ...newAnimations[index],
+                                  values: colors.join(';')
+                                };
+                                setAnimations(newAnimations);
+                              }}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <label className="w-32">Apply to:</label>
+                          <select
+                            value={anim.attributeName}
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                attributeName: e.target.value
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow p-1 border rounded"
+                          >
+                            <option value="fill">Fill</option>
+                            <option value="stroke">Stroke</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+                    
+                    {anim.type === 'motion' && anim.path && (
+                      <>
+                        <div className="flex items-center">
+                          <label className="w-32">Motion Type:</label>
+                          <select
+                            value={anim.motionType || 'morph'}
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                motionType: e.target.value
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow p-1 border rounded"
+                          >
+                            <option value="morph">Path Morphing</option>
+                            <option value="jitter">Jitter Effect</option>
+                            <option value="wave">Wave Effect</option>
+                          </select>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <label className="w-32">Intensity:</label>
+                          <input 
+                            type="range" 
+                            min="1" 
+                            max="20" 
+                            value={anim.intensity || 5} 
+                            onChange={e => {
+                              const newAnimations = [...animations];
+                              const index = newAnimations.findIndex(a => a.id === selectedAnimationId);
+                              const intensity = Number(e.target.value);
+                              
+                              // Regenerate path variations based on intensity
+                              let pathVariations;
+                              switch (anim.motionType || 'morph') {
+                                case 'jitter':
+                                  pathVariations = generateJitterPaths(anim.path, intensity, 5);
+                                  break;
+                                case 'wave':
+                                  pathVariations = generateWavePaths(anim.path, intensity, 5);
+                                  break;
+                                default:
+                                  pathVariations = generatePathVariations(anim.path, 5, intensity / 10);
+                              }
+                              
+                              newAnimations[index] = {
+                                ...newAnimations[index],
+                                intensity: intensity,
+                                values: pathVariations
+                              };
+                              setAnimations(newAnimations);
+                            }}
+                            className="flex-grow"
+                          />
+                          <span className="ml-2 w-12">{anim.intensity || 5}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+              
+              <div className="mt-4">
+                <button
+                  className="px-3 py-1 rounded bg-red-500 text-white"
+                  onClick={() => {
+                    setAnimations(animations.filter(a => a.id !== selectedAnimationId));
+                    setSelectedAnimationId(null);
+                  }}
+                >
+                  Delete Animation
+                </button>
+                <button
+                  className="px-3 py-1 rounded bg-blue-500 text-white ml-2"
+                  onClick={() => setPreviewAnimation(!previewAnimation)}
+                >
+                  {previewAnimation ? 'Stop Preview' : 'Preview Animations'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Animation Timer for previews */}
+      {previewAnimation && (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-white text-gray-900 border shadow rounded px-3 py-1 flex items-center z-10">
+          <span>Animating</span>
+          <button
+            className="ml-3 px-2 py-1 rounded bg-red-500 text-white text-sm"
+            onClick={() => setPreviewAnimation(false)}
+          >
+            Stop
+          </button>
+        </div>
+      )}
+    </>
+    </div>
+  );
+}
 
 export default SVGDragDropEditor;
