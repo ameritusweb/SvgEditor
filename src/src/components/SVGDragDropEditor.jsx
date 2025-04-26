@@ -973,106 +973,81 @@ const renderElements = () => {
     });
     
     if (element.type === 'rect') {
-      // Calculate center point for transformations
-      const centerX = element.x + (element.width / 2);
-      const centerY = element.y + (element.height / 2);
-      
       return (
-        <g key={element.id} transform={`translate(${centerX},${centerY})`}>
-          <rect
-            key={`${element.id}-rect`}
-            x={-element.width/2}
-            y={-element.height/2}
-            width={element.width}
-            height={element.height}
-            fill={element.fill}
-            stroke={element.stroke}
-            strokeWidth={element.strokeWidth}
-            {...elementProps}
-          />
+        <rect
+          key={element.id}
+          x={element.x}
+          y={element.y}
+          width={element.width}
+          height={element.height}
+          fill={element.fill}
+          stroke={element.stroke}
+          strokeWidth={element.strokeWidth}
+          {...elementProps}
+        >
           {animElements}
-        </g>
+        </rect>
       );
     } else if (element.type === 'circle') {
       return (
-        <g key={element.id} transform={`translate(${element.cx},${element.cy})`}>
-          <circle
-            key={`${element.id}-circle`}
-            cx={0}
-            cy={0}
-            r={element.r}
-            fill={element.fill}
-            stroke={element.stroke}
-            strokeWidth={element.strokeWidth}
-            {...elementProps}
-          />
+        <circle
+          key={element.id}
+          cx={element.cx}
+          cy={element.cy}
+          r={element.r}
+          fill={element.fill}
+          stroke={element.stroke}
+          strokeWidth={element.strokeWidth}
+          {...elementProps}
+        >
           {animElements}
-        </g>
+        </circle>
       );
     } else if (element.type === 'ellipse') {
       return (
-        <g key={element.id} transform={`translate(${element.cx},${element.cy})`}>
-          <ellipse
-            key={`${element.id}-ellipse`}
-            cx={0}
-            cy={0}
-            rx={element.rx}
-            ry={element.ry}
-            fill={element.fill}
-            stroke={element.stroke}
-            strokeWidth={element.strokeWidth}
-            strokeDasharray={element.strokeDasharray}
-            {...elementProps}
-          />
+        <ellipse
+          key={element.id}
+          cx={element.cx}
+          cy={element.cy}
+          rx={element.rx}
+          ry={element.ry}
+          fill={element.fill}
+          stroke={element.stroke}
+          strokeWidth={element.strokeWidth}
+          strokeDasharray={element.strokeDasharray}
+          {...elementProps}
+        >
           {animElements}
-        </g>
+        </ellipse>
       );
     } else if (element.type === 'text') {
       return (
-        <g key={element.id} transform={`translate(${element.x},${element.y})`}>
-          <text
-            key={`${element.id}-text`}
-            x={0}
-            y={0}
-            fontFamily={element.fontFamily}
-            fontSize={element.fontSize}
-            fill={element.fill}
-            {...elementProps}
-          >
-            {element.text}
-          </text>
+        <text
+          key={element.id}
+          x={element.x}
+          y={element.y}
+          fontFamily={element.fontFamily}
+          fontSize={element.fontSize}
+          fill={element.fill}
+          {...elementProps}
+        >
+          {element.text}
           {animElements}
-        </g>
+        </text>
       );
-    } else if (element.type === 'path') {
-      // Get path bounding box for center point
-      const bbox = getBoundingBox(element);
-      const centerX = bbox.x + (bbox.width / 2);
-      const centerY = bbox.y + (bbox.height / 2);
-      
-      // Adjust path data relative to center
-      const adjustedPathData = element.d.split(/(?=[MLHVCSQTAZmlhvcsqtaz])/).map(cmd => {
-        const type = cmd.charAt(0);
-        if (type === 'M' || type === 'L') {
-          const [_, x, y] = cmd.match(/([MLml])\s*([^,\s]+)[,\s]([^,\s]+)/) || [null, type, 0, 0];
-          return `${type} ${parseFloat(x) - centerX} ${parseFloat(y) - centerY}`;
-        }
-        return cmd;
-      }).join(' ');
-      
+    } else if (element.type === 'path') {      
       return (
-        <g key={element.id} transform={`translate(${centerX},${centerY})`}>
-          <path
-            key={`${element.id}-path`}
-            d={adjustedPathData}
-            fill={element.fill}
-            stroke={element.stroke}
-            strokeWidth={element.strokeWidth}
-            strokeDasharray={element.strokeDasharray}
-            {...elementProps}
-          />
+        <path
+          key={element.id}
+          d={element.d}
+          fill={element.fill}
+          stroke={element.stroke}
+          strokeWidth={element.strokeWidth}
+          strokeDasharray={element.strokeDasharray}
+          {...elementProps}
+        >
           {animElements}
-        </g>
+        </path>
       );
     }
     return null;
